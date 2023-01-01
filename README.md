@@ -1,70 +1,268 @@
-# Getting Started with Create React App
+# Building Full-Stack App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+```
+npm run build
+```
+## Back End First
 
-## Available Scripts
+### Dependancies, Settings, Connections
 
-In the project directory, you can run:
+```
+npm i express mongoose dotenv morgan serve-favicon
+```
 
-### `npm start`
+```
+mkdir models controllers routes config
+```
+```
+touch .env .env-example server.js
+```
+**in .gitignore** add .env to the list of other .env files. 
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+# misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+**in server.js**
 
-### `npm test`
+```
+require('dotenv').config()
+require('./config/database')
+```
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+cd config
+touch database.js
+```
 
-### `npm run build`
+**in database.js**
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```
+const mongoose = require('mongoose');
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+mongoose.connect(process.env.MONGO_URI);
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+const db = mongoose.connection;
+db.on('connected', function () {
+     console.log(`Connected to ${db.name} at ${db.host}:${db.port}`)
+})
+```
 
-### `npm run eject`
+**in .env**
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```
+MONGO_URI=mongodb+srv://edithbird:<password>@cluster0.w3guwmj.mongodb.net/<clustername>?retryWrites=true&w=majority
+SECRET=thisisasecret
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Connect Database and Create App Object
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+**in server.js**
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+require('dotenv').config()
+require('./config/database')
+const express = require('express')
+const path = require('path')
+const favicon = require('serve-favicon')
+const logger = require('morgan')
+const PORT = process.env.PORT || 3001
 
-## Learn More
+const app = express()
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Add Middleware
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+**in server.js**
 
-### Code Splitting
+```
+app.use(express.json())
+app.use((req,res,next) => {
+res.locals.data = {}
+next()
+})
+app.use(logger('dev'))
+app.use(favicon(path.join(__dirname, 'build', 'favicon.ico')))
+app.use(express.static(path.join(__dirname, 'build')))
+app.use('/api/placeholders', require('./routes/api/placeholders'))
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+app.get('/api/test', (req,res) => {
+     res.join({'eureka': 'found it'})
+})
+app.get('*', (req, res) => {
+     res.sendFile(path.join(__dirname, 'build', 'index.html'))
+})
 
-### Analyzing the Bundle Size
+app.listen(PORT, ()=> {
+     console.log(`I am listening on ${PORT}`)
+})
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Models, Controllers, Routes
 
-### Making a Progressive Web App
+```
+const {model, Schema} = require('mongoose')
+const placeholderSchema = new Schema ({
+     title: {required: true, type: String},
+    completed: { required: true, type: String}
+}, {timestamps:true
+})
+const Placeholder = model('Placeholder', placeholderSchema)
+module.exports = Placeholder
+```
+**create placeholders.js in controllers/api**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```
+const Placeholder = require('../../models/placeholder')
 
-### Advanced Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+module.exports = {
+     create, 
+     indexComplete, 
+     indexNotComplete,
+     show,
+     update, 
+     destroy, 
+     jsonPlaceholders, 
+     jsonPlaceholder
+}
 
-### Deployment
+//jsonPlaceholder, jsonPlaceholders
+function jsonPlaceholder(req,res){
+     res.json(res.locals.data.placeholder)
+}
+function jsonPlaceholders(req, res) {
+     res.json(res.locals.data.placeholders)
+}
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+//create
+async function create(req, res, next){
+     try {
+          const placeholder = await Placeholder.create(req.body)
+          console.log(placeholder)
+          res.locals.data.placeholder = placeholder
+          next()
+     } catch (error) {
+          res.status(400).json({ msg: error.message })
+          
+     }
+}
+//read- index, show
+async function indexComplete(req,res,next) {
+     try {
+          const placeholders = await Placeholder.find({ completed:true })
+          res.locals.data.placeholders = placeholders
+          next()
+     } catch (error) {
+          res.status(400).json({ msg: error.message })
+          
+     }
+}
 
-### `npm run build` fails to minify
+async function indexNotComplete(req,res,next) {
+     try {
+          const placeholders = await Placeholder.find({ completed:false })
+          res.locals.data.placeholders = placeholders
+          next()
+     } catch (error) {
+          res.status(400).json({ msg: error.message })
+          
+     }
+}
+//show
+async function show (req, res, next) {
+     try {
+          const placeholders = await Placeholder.findById(req.params.id)
+          res.locals.data.placeholder = placeholder
+          next()
+     } catch (error) {
+          res.status(400).json({ msg: error.message })
+     }
+}
+//update
+async function update (req, res, next) {
+     try {
+          const placeholder = await Placeholder.findByIdAndUpdate(req.params.id, req.body, { new : true }
+               )
+          res.locals.data.placeholder = placeholder
+          next()
+     } catch (error) {
+          res.status(400).json({ msg: error.message })
+     }
+}
+//destroy
+async function destroy (req, res, next) {
+     try {
+          const placeholder = await Placeholder.findByIdAndDelete(req.params.id)
+          res.locals.data.placeholder = placeholder
+          next()
+     } catch (error) {
+          res.status(400).json({ msg: error.message })
+     }
+}
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+**create placeholders.js in routes/api**
+
+```
+const express = require('express')
+const router = express.Router()
+const placeholderCtrl = require('../../controllers/api/placeholders')
+
+// Index /api/placeholders
+router.get('/', bookmarkCtrl.indexNotComplete, placeholderCtrl.jsonPlaceholders)
+//Index /api/placeholders/completed
+router.get('/completed', placeholderCtrl.indexComplete,  placeholderCtrl.jsonPlaceholders)
+//Delete /api/placeholders/:id
+router.delete('/:id', placeholderCtrl.destroy, placeholderCtrl.jsonPlaceholder)
+//Update /api/placeholders/:id
+router.put('/:id', placeholderCtrl.update, placeholderCtrl.jsonPlaceholder)
+//Create /api/placeholders
+router.post('/', placeholderCtrl.create, placeholderCtrl.jsonPlaceholder)
+//Show /api/placeholders/:id
+router.get('/:id', placeholderCtrl.show, placeholderCtrl.jsonPlaceholder)
+
+module.exports = router
+```
+
+**run server in dev mode***
+
+```npm i nodemon```
+
+**in package.json, replace...**
+
+```
+"scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+```
+
+**with** 
+
+```
+"scripts": {
+    "start": "node server.js", 
+    "dev": "nodemon server.js",
+    "react": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "proxy": "http://localhost:3001/",
+```          
+
+```npm run dev```
+
+```npm run react```
+
+
+
