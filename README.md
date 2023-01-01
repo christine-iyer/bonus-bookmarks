@@ -259,8 +259,299 @@ module.exports = router
   },
   "proxy": "http://localhost:3001/",
 ```          
+**test routes in postman**
+
+
+## Restful Routes and API testing
+
+| #  |Action   | URL |  HTTP Verb |  JSX file name |  mongoose |
+|---|---|---|---|---|---|
+|  1 | Index  |  /logs/ |  GET |  Index.jsx | Log.find  |
+|   2|  Show | /logs/:id  |  GET | Show.jsx   |  Log.findById|
+|  3 |  New |  /logs/new | GET  |  New.jsx |  none |
+|   4|  Create | /logs  |  POST |   none| Log.create(req.body)  |
+|   5| Edit  | /logs/:id/edit  | GET  | Edit.jsx  |  Log.findById |
+|   6|  Update | /logs/:id   |  PUT|  none |  Log.findByIdAndUpdate |
+|   7|  Destroy | /logs/:id   |  DELETE|  none |  Log.findByIdAndDelete |
+
+
+### Routes for Postman 
+
+example '63a3cf5e8318a07510819fec'
+
+### User Login
+
+POST localhost:3003/api/users/login
+
+```js
+router.post('/login', dataController.login, apiController.auth)
+```
+
+### Check user
+
+POST localhost:3003/api/users
+
+```js
+router.post('/', dataController.create, apiController.auth)
+```
+
+### Check Token
+
+GET localhost:3003/api/users/check-token
+
+```js
+router.get('/check-token', ensureLoggedIn, checkToken)
+```
+
+
+
+### Cart
+
+GET localhost:3003/api/orders/cart
+
+```js
+router.get('/cart', ordersCtrl.cart);
+```
+
+### History
+
+GET localhost:3003/api/orders/history
+
+```js
+router.get('/history', ordersCtrl.history);
+```
+
+
+### Cart
+
+POST localhost:3003/api/orders/cart/items/63a3cf5e8318a07510819fec
+
+```js
+router.post('/cart/items/:id', ordersCtrl.addToCart);
+```
+
+
+### Checkout
+
+POST localhost:3003/api/orders/cart/checkout
+
+```js
+router.post('/cart/checkout', ordersCtrl.checkout);
+```
+
+
+### Check Items in Cart
+
+PUT localhost:3003/api/orders/cart/qty
+
+```js
+router.put('/cart/qty', ordersCtrl.setItemQtyInCart);
+```
+
+
+### INDEX
+
+GET localhost:3003/api/items
+
+```js
+router.get('/', itemsCtrl.index);
+```
+
+### SHOW
+
+GET localhost:3003/api/items/63a3cf5e8318a07510819fec
+
+```js
+router.get('/:id', itemsCtrl.show);
+```
+
+
+
+             
 
 ```npm run dev```
+
+# Front End
+
+**delete src folder and remake**
+
+```
+mkdir src
+cd src
+touch App.js index.js styles.css
+```
+
+**in index.js**
+
+```
+import './styles.css'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client'
+import App from './App'
+
+const root = createRoot(document.getElementById('root'))
+
+root.render(
+    <StrictMode>
+        <App/>
+    </StrictMode>
+)
+```
+**in src**
+
+```mkdir BlogTitle BlogAuthor BlogBody
+```
+**in each folder, create a .js and .module.scss**
+**BlogTitle/BlogTitle.js**
+
+```
+import { useState } from 'react';
+
+const BlogTitle = () => {
+	const [title, setTitle] = useState('');
+
+	return (
+		<div className="create">
+			<h2>Blog</h2>
+			<form>
+				<label>Blog Title</label>
+				<input
+					type="text"
+					required
+					value={title}
+					onChange={(e) => setTitle(e.target.value)}
+				/>
+
+				<button>Add Blog</button>
+				<p>{title}</p>
+			</form>
+		</div>
+	);
+};
+export default BlogTitle;
+```
+
+**BlogAuthor/BlogAuthor.js**
+
+```
+import { useState } from 'react';
+
+const BlogAuthor = () => {
+	const [author, setAuthor] = useState('luigi');
+
+	return (
+		<div className="create">
+			<h2>Blog</h2>
+			<form>
+				<label>Blog Author</label>
+				<select value={author} onChange={(e) => setAuthor(e.target.value)}>
+					<option value="mario">mario</option>
+					<option value="yoshi">yoshi</option>
+					<option value="luigi">luigi</option>
+				</select>
+				<button>Add Blog</button>
+
+				<p>{author}</p>
+			</form>
+		</div>
+	);
+};
+export default BlogAuthor;
+```
+
+**BlogAuthor/BlogBody.js**
+
+```
+import { useState } from 'react';
+
+const BlogBody = () => {
+	const [body, setBody] = useState('');
+
+	return (
+		<div className="create">
+			<h2>Blog</h2>
+			<form>
+				<label> Blog Body</label>
+				<textarea
+					required
+					value={body}
+					onChange={(e) => setBody(e.target.value)}></textarea>
+
+				<button>Add Blog</button>
+
+				<p>{body}</p>
+			</form>
+		</div>
+	);
+};
+export default BlogBody;
+```
+**in Create/Create.js**
+
+```
+import { useState } from 'react';
+
+const Create = () => {
+	const [title, setTitle] = useState('');
+	const [body, setBody] = useState('');
+	const [author, setAuthor] = useState('luigi');
+
+	return (
+		<div className="create">
+			<h2>Blog</h2>
+			<form>
+				<label>Blog Title</label>
+				<input
+					type="text"
+					required
+					value={title}
+					onChange={(e) => setTitle(e.target.value)}
+				/>
+				<label> Blog Body</label>
+				<textarea
+					required
+					value={body}
+					onChange={(e) => setBody(e.target.value)}></textarea>
+				<label>Blog Author</label>
+				<select value={author} onChange={(e) => setAuthor(e.target.value)}>
+					<option value="mario">mario</option>
+					<option value="yoshi">yoshi</option>
+					<option value="luigi">luigi</option>
+				</select>
+				<button>Add Blog</button>
+				<p>{title}</p>
+				<p>{body}</p>
+				<p>{author}</p>
+			</form>
+		</div>
+	);
+};
+export default Create;
+```
+
+**in App.js**
+
+```
+import Create from './Create/Create';
+
+export default function App() {
+	return (
+		<div className="App">
+          <Create />
+		</div>
+	);
+}
+```
+
+### Pages and Authentication
+
+
+
+```npm i -g scss```
+
+
+
+
 
 ```npm run react```
 
